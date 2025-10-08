@@ -6,7 +6,7 @@
 
 
 //Function declarations: 
-int myFunction(int, int);
+
 
 //Global Variables:
 QueueHandle_t testQueue;
@@ -19,14 +19,7 @@ struct dataPack{
   int error;
 };
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
-
 //Function definitions:
-int myFunction(int x, int y) {
-  return x + y;
-}
 
 float generateSensorSignal(){
   return random(-10, 111); 
@@ -40,7 +33,6 @@ float movingAverage(float newValue){
   for (int i = 0; i < bufferCount; i++){
     sum += sensorBuffer[i];
   }
-  printf("%d" , sum/bufferCount);
   return sum/bufferCount;
 }
 
@@ -58,11 +50,24 @@ void vSensorTask(void *pvParameters){
   }
 }
 
+void vCanTask(void *pvParameters){
+  dataPack d1;
+  for(;;){
+    xQueueReceive(testQueue, &d1, portMAX_DELAY);
+    char buffer[50];
+    sprintf(buffer, "CAN[ID=0x123]: %.0f%%, %s", d1.value, d1.error ? "ERROR" : "OK");
+    Serial.println(buffer);
+  }
+}
+
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
   testQueue = xQueueCreate(5, sizeof(struct dataPack));
   xTaskCreate(vSensorTask, "Sensor", 1000, NULL, 1, NULL);
+  xTaskCreate(vCanTask, "Can", 1000, NULL, 2, NULL);
   vTaskStartScheduler();
+}
+
+void loop(){
 
 }
